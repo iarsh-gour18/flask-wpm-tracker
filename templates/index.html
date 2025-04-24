@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}TypeMaster - Improve Your Typing Skills{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-16">
+    <div class="text-center mb-16">
+        <h1 class="text-5xl font-bold mb-6">Welcome to TypeMaster</h1>
+        <p class="text-xl text-gray-300 mb-8">Improve your typing speed and accuracy with our interactive typing tests</p>
+        <div class="flex justify-center space-x-6">
+            <a href="{{ url_for('typing_test') }}" 
+               class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-bold transition duration-200">
+                Start Typing Test
+            </a>
+            {% if not current_user.is_authenticated %}
+            <a href="{{ url_for('signup') }}" 
+               class="bg-green-500 hover:bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-bold transition duration-200">
+                Create Account
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-lg p-6">
+            <h3 class="text-xl font-bold mb-4">Real-time Analysis</h3>
+            <p class="text-gray-300">Get instant feedback on your typing speed (WPM) and accuracy as you type.</p>
+        </div>
+        <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-lg p-6">
+            <h3 class="text-xl font-bold mb-4">Multiple Practice Modes</h3>
+            <p class="text-gray-300">Practice with common words, numbers, symbols, or programming syntax.</p>
+        </div>
+        <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-lg p-6">
+            <h3 class="text-xl font-bold mb-4">Track Progress</h3>
+            <p class="text-gray-300">Monitor your improvement over time with detailed statistics and achievements.</p>
+        </div>
+    </div>
+
+    <!-- Quick Start Guide -->
+    <div class="bg-gray-800 bg-opacity-50 backdrop-blur-lg rounded-lg p-8">
+        <h2 class="text-2xl font-bold mb-6">Quick Start Guide</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-xl font-bold mb-4">For New Users</h3>
+                <ol class="list-decimal list-inside text-gray-300 space-y-2">
+                    <li>Click "Start Typing Test" to try without an account</li>
+                    <li>Create an account to save your progress</li>
+                    <li>Set daily practice goals</li>
+                    <li>Track your improvement over time</li>
+                </ol>
+            </div>
+            <div>
+                <h3 class="text-xl font-bold mb-4">Tips for Better Typing</h3>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Keep your fingers on the home row keys</li>
+                    <li>Look at the screen, not your hands</li>
+                    <li>Focus on accuracy first, speed will follow</li>
+                    <li>Practice regularly for best results</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

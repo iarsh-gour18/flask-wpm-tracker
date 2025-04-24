@@ -1,0 +1,481 @@
+{% extends "base.html" %}
+
+{% block title %}Typing Test - TypeMaster{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6 text-center text-blue-400">Typing Speed Test</h1>
+    
+    <!-- Timer Selection -->
+    <div id="timer-selection" class="glass-morphism p-6 mb-8 rounded-lg text-center">
+        <h2 class="text-xl font-bold mb-4 text-blue-400">Select Test Duration</h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button class="timer-option bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-4 transition duration-200" data-time="30">
+                <span class="block text-2xl font-bold text-blue-400">30</span>
+                <span class="text-sm text-gray-400">seconds</span>
+            </button>
+            <button class="timer-option bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-4 transition duration-200" data-time="60">
+                <span class="block text-2xl font-bold text-blue-400">60</span>
+                <span class="text-sm text-gray-400">seconds</span>
+            </button>
+            <button class="timer-option bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-4 transition duration-200" data-time="120">
+                <span class="block text-2xl font-bold text-blue-400">120</span>
+                <span class="text-sm text-gray-400">seconds</span>
+            </button>
+            <button class="timer-option bg-gray-800 hover:bg-gray-700 text-white rounded-lg p-4 transition duration-200" data-time="300">
+                <span class="block text-2xl font-bold text-blue-400">300</span>
+                <span class="text-sm text-gray-400">seconds</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Test Section -->
+    <div id="test-section" class="glass-morphism p-6 mb-8 rounded-lg hidden">
+        <div id="test-info" class="mb-4">
+            <p class="text-lg mb-2">Type the following text:</p>
+            <div id="test-text" class="text-gray-300 bg-gray-800 bg-opacity-50 p-4 rounded-lg mb-4 leading-relaxed" data-text="{{ test_text }}">
+                {{ test_text }}
+            </div>
+        </div>
+        
+        <div id="typing-area" class="mb-4">
+            <textarea id="user-input" 
+                      class="typing-area w-full p-4 rounded-lg focus:outline-none" 
+                      rows="5"
+                      placeholder="Start typing here..."
+                      disabled></textarea>
+        </div>
+        
+        <div class="flex justify-between items-center mb-4">
+            <div id="timer" class="text-xl font-semibold text-blue-400">Time: <span id="time-left">60</span>s</div>
+            <div id="stats" class="text-xl">
+                <span id="wpm" class="text-green-400">WPM: 0</span>
+                <span class="mx-4 text-gray-400">|</span>
+                <span id="accuracy" class="text-yellow-400">Accuracy: 100%</span>
+            </div>
+        </div>
+        
+        <div class="flex justify-center space-x-4">
+            <button id="start-btn" 
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg transition duration-200 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Start Test
+            </button>
+            <button id="retry-btn" 
+                    class="hidden bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg transition duration-200 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                Try Again
+            </button>
+        </div>
+    </div>
+    
+    <!-- Results Section -->
+    <div id="results-section" class="hidden glass-morphism p-6 rounded-lg">
+        <h2 class="text-2xl font-bold mb-4 text-blue-400">Test Results</h2>
+        <div id="result-stats" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg text-center">
+                <h3 class="text-lg font-semibold mb-2 text-gray-300">Speed</h3>
+                <p id="final-wpm" class="text-3xl text-blue-400">0 WPM</p>
+            </div>
+            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg text-center">
+                <h3 class="text-lg font-semibold mb-2 text-gray-300">Accuracy</h3>
+                <p id="final-accuracy" class="text-3xl text-green-400">100%</p>
+            </div>
+            <div class="bg-gray-800 bg-opacity-50 p-4 rounded-lg text-center">
+                <h3 class="text-lg font-semibold mb-2 text-gray-300">Previous Best</h3>
+                <p id="previous-best" class="text-3xl text-purple-400">0 WPM</p>
+            </div>
+        </div>
+        
+        {% if previous_tests %}
+        <div class="mt-8">
+            <h3 class="text-xl font-semibold mb-4 text-blue-400">Recent Tests</h3>
+            <div class="overflow-x-auto">
+                <table class="min-w-full table-auto">
+                    <thead>
+                        <tr class="bg-gray-800 bg-opacity-50">
+                            <th class="px-4 py-2 text-left text-gray-300">Date</th>
+                            <th class="px-4 py-2 text-left text-gray-300">WPM</th>
+                            <th class="px-4 py-2 text-left text-gray-300">Accuracy</th>
+                            <th class="px-4 py-2 text-left text-gray-300">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for test in previous_tests %}
+                        <tr class="border-b border-gray-700">
+                            <td class="px-4 py-2 text-gray-300">{{ test.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="px-4 py-2 text-blue-400">{{ "%.1f"|format(test.wpm) }}</td>
+                            <td class="px-4 py-2 text-green-400">{{ "%.1f"|format(test.accuracy) }}%</td>
+                            <td class="px-4 py-2 text-gray-300">{{ test.duration }}s</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.test-text {
+    font-size: 24px; /* Increased font size */
+    line-height: 1.5;
+    letter-spacing: 0.5px;
+    white-space: pre-wrap;
+}
+
+.char {
+    display: inline-block;
+    position: relative;
+    transition: color 0.1s;
+}
+
+.char.correct {
+    color: #4ade80; /* Green color for correct characters */
+}
+
+.char.incorrect {
+    color: #ef4444; /* Red color for incorrect characters */
+}
+
+.char.current {
+    background-color: rgba(59, 130, 246, 0.2); /* Light blue background for current character */
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let timer;
+let timeLeft = 60;
+let testStarted = false;
+let testFinished = false;
+let startTime;
+let mistakes = 0;
+let totalChars = 0;
+let selectedDuration = 60;
+let currentTextIndex = 0;
+let testTexts = [];
+let totalWordsTyped = 0;
+let totalMistakes = 0;
+let totalCharactersTyped = 0;
+let testStartTime;
+let completedTexts = [];
+let availableTexts = [];
+let totalTimeSpent = 0;
+let currentTextStartTime;
+let cumulativeWPM = 0;
+let cumulativeAccuracy = 0;
+let textsCompleted = 0;
+
+// Initialize test texts from server data
+document.addEventListener('DOMContentLoaded', function() {
+    testTexts = {{ test_texts|tojson|safe }};
+    resetAvailableTexts();
+});
+
+function resetAvailableTexts() {
+    // Create a fresh copy of test texts
+    availableTexts = [...testTexts];
+    // Shuffle the array
+    for (let i = availableTexts.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableTexts[i], availableTexts[j]] = [availableTexts[j], availableTexts[i]];
+    }
+}
+
+const timerSelection = document.getElementById('timer-selection');
+const testSection = document.getElementById('test-section');
+const testText = document.getElementById('test-text');
+const userInput = document.getElementById('user-input');
+const startBtn = document.getElementById('start-btn');
+const retryBtn = document.getElementById('retry-btn');
+const timerDisplay = document.getElementById('time-left');
+const wpmDisplay = document.getElementById('wpm');
+const accuracyDisplay = document.getElementById('accuracy');
+const resultsSection = document.getElementById('results-section');
+
+// Timer selection
+document.querySelectorAll('.timer-option').forEach(button => {
+    button.addEventListener('click', () => {
+        selectedDuration = parseInt(button.dataset.time);
+        timeLeft = selectedDuration;
+        timerDisplay.textContent = timeLeft;
+        timerSelection.classList.add('hidden');
+        testSection.classList.remove('hidden');
+        userInput.focus();
+    });
+});
+
+function getNextText() {
+    if (availableTexts.length === 0) {
+        resetAvailableTexts();
+    }
+    return availableTexts.pop();
+}
+
+function formatTestText(text) {
+    return text.split('').map((char, index) => 
+        `<span class="char" data-index="${index}">${char}</span>`
+    ).join('');
+}
+
+function startTest() {
+    testStarted = true;
+    testFinished = false;
+    timeLeft = selectedDuration;
+    mistakes = 0;
+    totalChars = 0;
+    totalWordsTyped = 0;
+    totalMistakes = 0;
+    totalCharactersTyped = 0;
+    completedTexts = [];
+    totalTimeSpent = 0;
+    testStartTime = new Date();
+    currentTextStartTime = new Date();
+    
+    userInput.value = '';
+    userInput.disabled = false;
+    userInput.focus();
+    startBtn.classList.add('hidden');
+    
+    // Initialize text pool
+    resetAvailableTexts();
+    loadNextText();
+    
+    timer = setInterval(updateTimer, 1000);
+}
+
+function loadNextText() {
+    let nextText = getNextText();
+    if (!nextText) {
+        resetAvailableTexts();
+        nextText = getNextText();
+    }
+    testText.innerHTML = formatTestText(nextText);
+    testText.dataset.text = nextText;
+    testText.classList.add('test-text');
+    currentTextStartTime = new Date();
+    userInput.value = '';
+    mistakes = 0;
+    totalChars = 0;
+    userInput.focus();
+}
+
+function checkInput() {
+    if (!testStarted || testFinished) return;
+    
+    const currentInput = userInput.value;
+    const currentTestText = testText.dataset.text;
+    const chars = testText.getElementsByClassName('char');
+    
+    // Reset all character styles
+    Array.from(chars).forEach(char => {
+        char.classList.remove('correct', 'incorrect', 'current');
+    });
+    
+    // Count mistakes and update character colors
+    let currentMistakes = 0;
+    for (let i = 0; i < currentInput.length; i++) {
+        if (i < chars.length) {
+            if (currentInput[i] === currentTestText[i]) {
+                chars[i].classList.add('correct');
+            } else {
+                chars[i].classList.add('incorrect');
+                currentMistakes++;
+            }
+        }
+    }
+    
+    // Show current character position
+    if (currentInput.length < chars.length) {
+        chars[currentInput.length].classList.add('current');
+    }
+    
+    // Update stats for current text
+    mistakes = currentMistakes;
+    totalChars = currentInput.length;
+    
+    // Update real-time stats
+    updateStats();
+    
+    // Check if current text is completed and there's still time
+    if (currentInput === currentTestText && timeLeft > 0) {
+        // Store completed text stats
+        const textEndTime = new Date();
+        const textTimeSpent = (textEndTime - currentTextStartTime) / 1000;
+        
+        // Calculate current text stats
+        const currentTextWPM = ((currentInput.length / 5) / (textTimeSpent / 60));
+        const currentTextAccuracy = ((currentInput.length - mistakes) / currentInput.length) * 100;
+        
+        // Store the completed text
+        completedTexts.push({
+            text: currentTestText,
+            mistakes: mistakes,
+            chars: currentInput.length,
+            timeSpent: textTimeSpent,
+            wpm: currentTextWPM,
+            accuracy: currentTextAccuracy
+        });
+        
+        // Update cumulative stats
+        textsCompleted++;
+        cumulativeWPM = completedTexts.reduce((sum, text) => sum + text.wpm, 0) / textsCompleted;
+        cumulativeAccuracy = completedTexts.reduce((sum, text) => sum + text.accuracy, 0) / textsCompleted;
+        
+        // Update display
+        wpmDisplay.textContent = `WPM: ${Math.round(cumulativeWPM * 10) / 10}`;
+        accuracyDisplay.textContent = `Accuracy: ${Math.round(cumulativeAccuracy * 10) / 10}%`;
+        
+        // Load next text
+        loadNextText();
+    }
+}
+
+function updateStats() {
+    if (!testStarted || testFinished) return;
+    
+    // Calculate current text progress
+    const currentInput = userInput.value;
+    const elapsedTime = (new Date() - currentTextStartTime) / 1000 / 60; // in minutes
+    
+    if (elapsedTime > 0) {
+        const currentWPM = (currentInput.length / 5) / elapsedTime;
+        const currentAccuracy = currentInput.length > 0 
+            ? ((currentInput.length - mistakes) / currentInput.length) * 100 
+            : 100;
+        
+        // If we have completed texts, show average including current progress
+        if (textsCompleted > 0) {
+            const avgWPM = (cumulativeWPM * textsCompleted + currentWPM) / (textsCompleted + 1);
+            const avgAccuracy = (cumulativeAccuracy * textsCompleted + currentAccuracy) / (textsCompleted + 1);
+            
+            wpmDisplay.textContent = `WPM: ${Math.round(avgWPM * 10) / 10}`;
+            accuracyDisplay.textContent = `Accuracy: ${Math.round(avgAccuracy * 10) / 10}%`;
+        } else {
+            // Show current text stats if no completed texts
+            wpmDisplay.textContent = `WPM: ${Math.round(currentWPM * 10) / 10}`;
+            accuracyDisplay.textContent = `Accuracy: ${Math.round(currentAccuracy * 10) / 10}%`;
+        }
+    }
+}
+
+function endTest() {
+    clearInterval(timer);
+    testFinished = true;
+    userInput.disabled = true;
+    retryBtn.classList.remove('hidden');
+    
+    // Add final text progress if any
+    if (userInput.value.length > 0) {
+        const finalTextTime = (new Date() - currentTextStartTime) / 1000;
+        const finalTextWPM = (userInput.value.length / 5) / (finalTextTime / 60);
+        const finalTextAccuracy = ((userInput.value.length - mistakes) / userInput.value.length) * 100;
+        
+        completedTexts.push({
+            text: userInput.value,
+            mistakes: mistakes,
+            chars: userInput.value.length,
+            timeSpent: finalTextTime,
+            wpm: finalTextWPM,
+            accuracy: finalTextAccuracy
+        });
+        
+        textsCompleted++;
+        totalMistakes += mistakes;
+        totalCharactersTyped += userInput.value.length;
+        totalWordsTyped += userInput.value.length / 5;
+        totalTimeSpent += finalTextTime;
+    }
+    
+    // Calculate final stats as average of all texts
+    const finalWPM = completedTexts.reduce((sum, text) => sum + text.wpm, 0) / textsCompleted;
+    const finalAccuracy = completedTexts.reduce((sum, text) => sum + text.accuracy, 0) / textsCompleted;
+    
+    // Save results
+    fetch('/save-test-result', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            wpm: Math.round(finalWPM * 10) / 10,
+            accuracy: Math.round(finalAccuracy * 10) / 10,
+            duration: selectedDuration,
+            test_content: completedTexts.map(t => t.text).join(' ')
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update results display
+            document.getElementById('final-wpm').textContent = `${Math.round(finalWPM * 10) / 10} WPM`;
+            document.getElementById('final-accuracy').textContent = `${Math.round(finalAccuracy * 10) / 10}%`;
+            document.getElementById('previous-best').textContent = `${data.stats.previous_best} WPM`;
+            
+            // Show results
+            resultsSection.classList.remove('hidden');
+            
+            // Show achievement if earned
+            if (data.achievement) {
+                showAchievementModal(data.achievement);
+            }
+        } else {
+            console.error('Error saving results:', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function updateTimer() {
+    timeLeft--;
+    timerDisplay.textContent = timeLeft;
+    
+    if (timeLeft <= 0) {
+        endTest();
+    }
+}
+
+function showAchievementModal(achievement) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h2 class="text-2xl font-bold text-blue-400 mb-4">Achievement Unlocked! 🏆</h2>
+            <h3 class="text-xl text-yellow-400 mb-2">${achievement.name}</h3>
+            <p class="text-gray-300">${achievement.description}</p>
+            <button class="mt-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">
+                Close
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector('button').addEventListener('click', () => {
+        modal.remove();
+    });
+}
+
+// Event listeners
+userInput.addEventListener('input', checkInput);
+startBtn.addEventListener('click', startTest);
+retryBtn.addEventListener('click', () => {
+    timerSelection.classList.remove('hidden');
+    testSection.classList.add('hidden');
+    resultsSection.classList.add('hidden');
+    retryBtn.classList.add('hidden');
+    startBtn.classList.remove('hidden');
+    userInput.disabled = true;
+    userInput.value = '';
+    mistakes = 0;
+    totalChars = 0;
+    testStarted = false;
+    testFinished = false;
+    // Reset available texts for new attempt
+    resetAvailableTexts();
+});
+</script>
+{% endblock %} 

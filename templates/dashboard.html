@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}TypeMaster - Your Typing Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Welcome Section -->
+    <div class="bg-white shadow-lg p-6 mb-8 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-extrabold mb-2 text-gray-800">Welcome to TypeMaster!</h1>
+                <p class="text-gray-600">Practice, improve, and master your typing skills</p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm font-medium text-gray-500">Current Streak</p>
+                <p class="text-2xl font-extrabold text-blue-500">{{ current_user.streak_days }} days</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white shadow-lg p-6 border border-gray-100 hover:border-blue-200 transition-colors">
+            <h3 class="text-lg font-bold mb-2 text-gray-700">Best Speed</h3>
+            <p class="text-3xl font-extrabold text-blue-500">{{ stats.best_wpm|default(0)|round(1) }} WPM</p>
+        </div>
+        <div class="bg-white shadow-lg p-6 border border-gray-100 hover:border-green-200 transition-colors">
+            <h3 class="text-lg font-bold mb-2 text-gray-700">Average Accuracy</h3>
+            <p class="text-3xl font-extrabold text-green-500">{{ stats.avg_accuracy|default(0)|round(1) }}%</p>
+        </div>
+        <div class="bg-white shadow-lg p-6 border border-gray-100 hover:border-purple-200 transition-colors">
+            <h3 class="text-lg font-bold mb-2 text-gray-700">Tests Completed</h3>
+            <p class="text-3xl font-extrabold text-purple-500">{{ stats.total_tests|default(0) }}</p>
+        </div>
+        <div class="bg-white shadow-lg p-6 border border-gray-100 hover:border-orange-200 transition-colors">
+            <h3 class="text-lg font-bold mb-2 text-gray-700">Practice Time</h3>
+            <p class="text-3xl font-extrabold text-orange-500">{{ stats.practice_minutes|default(0) }} mins</p>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white shadow-lg p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Start Typing Test</h2>
+            <p class="text-gray-600 font-medium mb-4">Test your typing speed and accuracy. Take as many tests as you want to improve!</p>
+            <div class="grid grid-cols-2 gap-4">
+                <a href="{{ url_for('typing_test') }}" 
+                   class="bg-blue-500 text-white text-center px-4 py-3 rounded-lg hover:bg-blue-600 transition-colors font-bold shadow-md">
+                    New Speed Test
+                </a>
+                <a href="{{ url_for('practice', practice_type='common_words') }}" 
+                   class="bg-green-500 text-white text-center px-4 py-3 rounded-lg hover:bg-green-600 transition-colors font-bold shadow-md">
+                    Practice Mode
+                </a>
+            </div>
+        </div>
+        <div class="bg-white shadow-lg p-6 border border-gray-100">
+            <h2 class="text-xl font-bold mb-4 text-gray-800">Daily Practice Goal</h2>
+            <p class="text-gray-600 font-medium mb-4">Track your daily typing practice progress</p>
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex-1 mr-4">
+                    {% set progress_width = (stats.daily_progress|default(0) / current_user.daily_goal * 100)|round %}
+                    <div class="w-full bg-gray-100 rounded-full border border-gray-200">
+                        <div class="h-4 bg-blue-500 rounded-full transition-all duration-300"
+                             style="width: {{ progress_width }}%"></div>
+                    </div>
+                </div>
+                <span class="text-sm font-bold text-gray-600 min-w-[80px] text-right whitespace-nowrap">
+                    {{ stats.daily_progress|default(0) }}/{{ current_user.daily_goal }} min
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="bg-white shadow-lg p-6 border border-gray-100">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Recent Test History</h2>
+        {% if recent_tests %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead>
+                    <tr class="text-left border-b border-gray-200">
+                        <th class="pb-2 font-bold text-gray-600">Date & Time</th>
+                        <th class="pb-2 font-bold text-gray-600">Type</th>
+                        <th class="pb-2 font-bold text-gray-600">Speed (WPM)</th>
+                        <th class="pb-2 font-bold text-gray-600">Accuracy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for test in recent_tests %}
+                    <tr class="border-b border-gray-100 hover:bg-gray-50">
+                        <td class="py-2 font-medium text-gray-600">{{ test.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="py-2 font-medium text-gray-600">{{ test.test_type|title }}</td>
+                        <td class="py-2 font-bold text-gray-800">{{ test.wpm|round(1) }}</td>
+                        <td class="py-2 font-medium text-gray-600">{{ test.accuracy|round(1) }}%</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-600 font-medium">No tests taken yet. Start your first typing test now!</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

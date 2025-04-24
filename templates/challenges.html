@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}Challenges & Tournaments - TypeMaster{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Daily Challenge -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Today's Challenge</h2>
+            <span class="text-sm text-gray-500">{{ current_date }}</span>
+        </div>
+        
+        {% if daily_challenge %}
+        <div class="border rounded p-4 mb-4">
+            <h3 class="text-xl font-bold mb-2">{{ daily_challenge.title }}</h3>
+            <p class="text-gray-600 mb-4">{{ daily_challenge.description }}</p>
+            <div class="flex justify-between items-center">
+                <div>
+                    <span class="text-sm text-gray-500">Difficulty: {{ daily_challenge.difficulty }}</span>
+                    <span class="mx-2">•</span>
+                    <span class="text-sm text-gray-500">Reward: {{ daily_challenge.reward_points }} points</span>
+                </div>
+                <button onclick="startDailyChallenge()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Start Challenge
+                </button>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-gray-600">No challenge available for today. Check back tomorrow!</p>
+        {% endif %}
+    </div>
+
+    <!-- Active Tournaments -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Active Tournaments</h2>
+            <button onclick="showCreateTournamentModal()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Create Tournament
+            </button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for tournament in active_tournaments %}
+            <div class="border rounded p-4">
+                <h3 class="text-xl font-bold mb-2">{{ tournament.name }}</h3>
+                <p class="text-gray-600 mb-2">{{ tournament.description }}</p>
+                <div class="space-y-2 mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Entry Fee:</span>
+                        <span>{{ tournament.entry_fee }} points</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Prize Pool:</span>
+                        <span>{{ tournament.prize_pool }} points</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Participants:</span>
+                        <span>{{ tournament.participants }}/{{ tournament.max_participants }}</span>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-2">
+                    {% if tournament.user_participating %}
+                    <button onclick="leaveTournament({{ tournament.id }})" class="text-red-500 hover:text-red-600">
+                        Leave
+                    </button>
+                    {% else %}
+                    <button onclick="joinTournament({{ tournament.id }})" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Join
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Upcoming Tournaments -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">Upcoming Tournaments</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for tournament in upcoming_tournaments %}
+            <div class="border rounded p-4">
+                <h3 class="text-xl font-bold mb-2">{{ tournament.name }}</h3>
+                <p class="text-gray-600 mb-2">{{ tournament.description }}</p>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Starts:</span>
+                        <span>{{ tournament.start_date.strftime('%B %d, %Y %H:%M') }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Entry Fee:</span>
+                        <span>{{ tournament.entry_fee }} points</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-sm text-gray-500">Prize Pool:</span>
+                        <span>{{ tournament.prize_pool }} points</span>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Tournament Modal -->
+<div id="createTournamentModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded-lg max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Create Tournament</h3>
+        <form id="createTournamentForm" onsubmit="createTournament(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Tournament Name</label>
+                <input type="text" name="name" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Description</label>
+                <textarea name="description" class="w-full p-2 border rounded" rows="3" required></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Entry Fee (points)</label>
+                <input type="number" name="entry_fee" class="w-full p-2 border rounded" min="0" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Max Participants</label>
+                <input type="number" name="max_participants" class="w-full p-2 border rounded" min="2" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Start Date</label>
+                <input type="datetime-local" name="start_date" class="w-full p-2 border rounded" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Duration (hours)</label>
+                <input type="number" name="duration" class="w-full p-2 border rounded" min="1" max="24" required>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeCreateTournamentModal()" 
+                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Create
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Daily Challenge
+async function startDailyChallenge() {
+    try {
+        const response = await fetch('/start-daily-challenge', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/typing-test?mode=daily_challenge';
+        }
+    } catch (error) {
+        console.error('Error starting daily challenge:', error);
+    }
+}
+
+// Tournament Management
+function showCreateTournamentModal() {
+    document.getElementById('createTournamentModal').classList.remove('hidden');
+    document.getElementById('createTournamentModal').classList.add('flex');
+}
+
+function closeCreateTournamentModal() {
+    document.getElementById('createTournamentModal').classList.add('hidden');
+    document.getElementById('createTournamentModal').classList.remove('flex');
+}
+
+async function createTournament(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/create-tournament', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error creating tournament:', error);
+    }
+}
+
+async function joinTournament(tournamentId) {
+    try {
+        const response = await fetch(`/join-tournament/${tournamentId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error joining tournament:', error);
+    }
+}
+
+async function leaveTournament(tournamentId) {
+    if (confirm('Are you sure you want to leave this tournament?')) {
+        try {
+            const response = await fetch(`/leave-tournament/${tournamentId}`, {
+                method: 'POST'
+            });
+            
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error leaving tournament:', error);
+        }
+    }
+}
+</script>
+{% endblock %} 

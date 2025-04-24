@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Mode - TypeMaster{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Practice Mode Selection -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <!-- Common Words Practice -->
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <h3 class="text-xl font-bold mb-4">Common Words</h3>
+            <p class="text-gray-600 mb-4">Practice typing the most frequently used words in English</p>
+            <a href="{{ url_for('practice', practice_type='common_words') }}" 
+               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                Start Practice
+            </a>
+        </div>
+
+        <!-- Numbers & Symbols -->
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <h3 class="text-xl font-bold mb-4">Numbers & Symbols</h3>
+            <p class="text-gray-600 mb-4">Master typing numbers and special characters</p>
+            <a href="{{ url_for('practice', practice_type='numbers_symbols') }}" 
+               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                Start Practice
+            </a>
+        </div>
+
+        <!-- Programming -->
+        <div class="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <h3 class="text-xl font-bold mb-4">Programming</h3>
+            <p class="text-gray-600 mb-4">Practice typing common programming syntax</p>
+            <a href="{{ url_for('practice', practice_type='programming') }}" 
+               class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors">
+                Start Practice
+            </a>
+        </div>
+    </div>
+
+    <!-- Practice Goals -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold mb-4">Set Practice Goals</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 border rounded">
+                <h3 class="font-bold mb-2">Daily Goal</h3>
+                <input type="number" id="dailyMinutes" class="w-full p-2 border rounded" placeholder="Minutes per day">
+                <button onclick="setGoal('daily')" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Set Goal
+                </button>
+            </div>
+            <div class="p-4 border rounded">
+                <h3 class="font-bold mb-2">Weekly Goal</h3>
+                <input type="number" id="weeklyMinutes" class="w-full p-2 border rounded" placeholder="Minutes per week">
+                <button onclick="setGoal('weekly')" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Set Goal
+                </button>
+            </div>
+            <div class="p-4 border rounded">
+                <h3 class="font-bold mb-2">Monthly Goal</h3>
+                <input type="number" id="monthlyMinutes" class="w-full p-2 border rounded" placeholder="Minutes per month">
+                <button onclick="setGoal('monthly')" class="mt-2 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    Set Goal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold mb-4">Your Achievements</h2>
+        <div id="achievements" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Achievements will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Achievement Modal -->
+<div id="achievementModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded-lg max-w-md">
+        <h3 class="text-xl font-bold mb-2">New Achievement Unlocked!</h3>
+        <p id="achievementName" class="text-gray-600 mb-4"></p>
+        <button onclick="closeAchievementModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+            Close
+        </button>
+    </div>
+</div>
+
+<script>
+// Set practice goals
+async function setGoal(type) {
+    const minutesInput = document.getElementById(`${type}Minutes`);
+    const minutes = parseInt(minutesInput.value);
+    
+    if (minutes > 0) {
+        try {
+            const response = await fetch('/set-goal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: type,
+                    minutes: minutes
+                })
+            });
+            
+            if (response.ok) {
+                alert('Goal set successfully!');
+                minutesInput.value = '';
+            }
+        } catch (error) {
+            console.error('Error setting goal:', error);
+        }
+    }
+}
+
+// Complete practice session
+async function completePractice(practiceType, minutes) {
+    try {
+        const response = await fetch('/complete-practice', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                practice_type: practiceType,
+                minutes: minutes
+            })
+        });
+        
+        if (response.ok) {
+            // Check for achievements
+            checkAchievements();
+        }
+    } catch (error) {
+        console.error('Error completing practice:', error);
+    }
+}
+
+// Check for new achievements
+async function checkAchievements() {
+    try {
+        const response = await fetch('/check-achievements');
+        const data = await response.json();
+        
+        if (data.new_achievements && data.new_achievements.length > 0) {
+            showAchievementModal(data.new_achievements[0]);
+        }
+    } catch (error) {
+        console.error('Error checking achievements:', error);
+    }
+}
+
+// Show achievement modal
+function showAchievementModal(achievementName) {
+    const modal = document.getElementById('achievementModal');
+    const nameElement = document.getElementById('achievementName');
+    
+    nameElement.textContent = achievementName;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+// Close achievement modal
+function closeAchievementModal() {
+    const modal = document.getElementById('achievementModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Check achievements periodically
+setInterval(checkAchievements, 30000); // Check every 30 seconds
+</script>
+{% endblock %} 

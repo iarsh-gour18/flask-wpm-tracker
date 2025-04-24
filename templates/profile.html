@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - TypeMaster{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Profile Header -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div class="flex items-center space-x-6">
+            <div class="relative">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile_photo) }}" 
+                     alt="Profile Photo" 
+                     class="w-32 h-32 rounded-full object-cover">
+                <button onclick="document.getElementById('profilePhotoInput').click()" 
+                        class="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600">
+                    <i class="fas fa-camera"></i>
+                </button>
+                <input type="file" id="profilePhotoInput" class="hidden" accept="image/*" onchange="uploadProfilePhoto(this)">
+            </div>
+            <div class="flex-1">
+                <h1 class="text-2xl font-bold">{{ current_user.full_name or current_user.username }}</h1>
+                <p class="text-gray-600">{{ current_user.bio or 'No bio yet' }}</p>
+                <div class="mt-4 flex space-x-4">
+                    <button onclick="showEditProfileModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                        Edit Profile
+                    </button>
+                    <button onclick="showSettingsModal()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                        Settings
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-2">Typing Speed</h3>
+            <p class="text-3xl font-bold text-blue-500">{{ stats.best_wpm }} WPM</p>
+            <p class="text-gray-600">Personal Best</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-2">Accuracy</h3>
+            <p class="text-3xl font-bold text-green-500">{{ stats.best_accuracy }}%</p>
+            <p class="text-gray-600">Best Accuracy</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-xl font-bold mb-2">Practice Streak</h3>
+            <p class="text-3xl font-bold text-purple-500">{{ current_user.streak_days }} days</p>
+            <p class="text-gray-600">Current Streak</p>
+        </div>
+    </div>
+
+    <!-- Custom Practices -->
+    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Custom Practices</h2>
+            <button onclick="showCreatePracticeModal()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                Create New
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for practice in custom_practices %}
+            <div class="border rounded p-4">
+                <h3 class="font-bold">{{ practice.title }}</h3>
+                <p class="text-gray-600 text-sm mb-2">{{ practice.content[:100] }}...</p>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">{{ practice.difficulty }}</span>
+                    <div class="flex space-x-2">
+                        <button onclick="editPractice({{ practice.id }})" class="text-blue-500 hover:text-blue-600">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deletePractice({{ practice.id }})" class="text-red-500 hover:text-red-600">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Friends Section -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold">Friends</h2>
+            <button onclick="showAddFriendModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                Add Friend
+            </button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for friend in friends %}
+            <div class="border rounded p-4">
+                <div class="flex items-center space-x-3">
+                    <img src="{{ url_for('static', filename='uploads/' + friend.profile_photo) }}" 
+                         alt="{{ friend.username }}" 
+                         class="w-10 h-10 rounded-full">
+                    <div>
+                        <h3 class="font-bold">{{ friend.username }}</h3>
+                        <p class="text-sm text-gray-600">{{ friend.stats.best_wpm }} WPM</p>
+                    </div>
+                </div>
+                <div class="mt-2 flex justify-end space-x-2">
+                    <button onclick="challengeFriend({{ friend.id }})" class="text-green-500 hover:text-green-600">
+                        Challenge
+                    </button>
+                    <button onclick="removeFriend({{ friend.id }})" class="text-red-500 hover:text-red-600">
+                        Remove
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div id="editProfileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded-lg max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Edit Profile</h3>
+        <form id="editProfileForm" onsubmit="updateProfile(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Full Name</label>
+                <input type="text" name="full_name" value="{{ current_user.full_name }}" 
+                       class="w-full p-2 border rounded">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Bio</label>
+                <textarea name="bio" class="w-full p-2 border rounded">{{ current_user.bio }}</textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeEditProfileModal()" 
+                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white p-6 rounded-lg max-w-md w-full">
+        <h3 class="text-xl font-bold mb-4">Settings</h3>
+        <form id="settingsForm" onsubmit="updateSettings(event)">
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Theme</label>
+                <select name="theme" class="w-full p-2 border rounded">
+                    <option value="light" {% if current_user.theme == 'light' %}selected{% endif %}>Light</option>
+                    <option value="dark" {% if current_user.theme == 'dark' %}selected{% endif %}>Dark</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 mb-2">Font Size</label>
+                <input type="range" name="font_size" min="12" max="24" value="{{ current_user.font_size }}"
+                       class="w-full" oninput="updateFontSize(this.value)">
+            </div>
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="high_contrast" {% if current_user.high_contrast %}checked{% endif %}
+                           class="mr-2">
+                    <span>High Contrast Mode</span>
+                </label>
+            </div>
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="two_factor" {% if current_user.two_factor_enabled %}checked{% endif %}
+                           class="mr-2">
+                    <span>Two-Factor Authentication</span>
+                </label>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeSettingsModal()" 
+                        class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                    Cancel
+                </button>
+                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    Save Settings
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Profile Photo Upload
+async function uploadProfilePhoto(input) {
+    const file = input.files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append('photo', file);
+        
+        try {
+            const response = await fetch('/upload-profile-photo', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error uploading photo:', error);
+        }
+    }
+}
+
+// Profile Modals
+function showEditProfileModal() {
+    document.getElementById('editProfileModal').classList.remove('hidden');
+    document.getElementById('editProfileModal').classList.add('flex');
+}
+
+function closeEditProfileModal() {
+    document.getElementById('editProfileModal').classList.add('hidden');
+    document.getElementById('editProfileModal').classList.remove('flex');
+}
+
+function showSettingsModal() {
+    document.getElementById('settingsModal').classList.remove('hidden');
+    document.getElementById('settingsModal').classList.add('flex');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.add('hidden');
+    document.getElementById('settingsModal').classList.remove('flex');
+}
+
+// Update Profile
+async function updateProfile(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/update-profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error updating profile:', error);
+    }
+}
+
+// Update Settings
+async function updateSettings(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/update-settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error updating settings:', error);
+    }
+}
+
+// Update Font Size
+function updateFontSize(size) {
+    document.documentElement.style.fontSize = `${size}px`;
+}
+
+// Friend Management
+async function addFriend(username) {
+    try {
+        const response = await fetch('/add-friend', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username })
+        });
+        
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Error adding friend:', error);
+    }
+}
+
+async function removeFriend(friendId) {
+    if (confirm('Are you sure you want to remove this friend?')) {
+        try {
+            const response = await fetch(`/remove-friend/${friendId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.ok) {
+                location.reload();
+            }
+        } catch (error) {
+            console.error('Error removing friend:', error);
+        }
+    }
+}
+
+async function challengeFriend(friendId) {
+    try {
+        const response = await fetch(`/challenge-friend/${friendId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            window.location.href = '/typing-test';
+        }
+    } catch (error) {
+        console.error('Error challenging friend:', error);
+    }
+}
+</script>
+{% endblock %} 
