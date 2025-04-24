@@ -26,11 +26,6 @@ A full-featured Flask web app that helps users practice typing, track their WPM 
 
 ---
 
-## 📷 Screenshots
-
-*(Add screenshots here if available)*  
-You can also upload GIFs or demo clips of the typing test and dashboard.
-
 ---
 
 ## 📂 Installation
